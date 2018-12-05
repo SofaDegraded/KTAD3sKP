@@ -36,8 +36,8 @@ def t_student_calc_s_star(n1, n2, data1, data2):
     return s_star
 
 def freedom_degree(n1, n2, data1, data2):
-    s1 = data1.var()
-    s2 = data2.var()
+    s1 = data1.var(ddof=1)
+    s2 = data2.var(ddof=1)
     if n1 != n2:
         v = (s1 / n1 + s2 / n2)**2 / ((s1 / n1)**2 / (n1 - 1)+ (s2 / n2)**2 / (n2 - 1))
     else:
@@ -68,31 +68,62 @@ def distr_MW(s_star):
 
 #моделирование статистики критерия
 def criterion_stat_modeling(n1, n2, M):
-    alpha = [0.01,0.025,0.05,0.1,0.15]
+    alpha = [0.1, 0.05, 0.01]
     data1_mod1 = np.array([np.random.normal(loc=0, scale=1, size=n1) for i in range(M)])
     data2_mod1 = np.array([np.random.normal(loc=0, scale=1, size=n2) for i in range(M)])
-    s_n1 = np.array([Mann_Whitney_calc_s_star(n1, n2, x, y) for x, y in zip(data1_mod1, data2_mod1)])
+    s_n1 = np.array([t_student_calc_s_star(n1, n2, x, y) for x, y in zip(data1_mod1, data2_mod1)])
 
     data1_mod2 = np.array([np.random.normal(loc=0, scale=1, size=n1) for i in range(M)])
-    data2_mod2 = np.array([np.random.normal(loc=0, scale=10, size=n2) for i in range(M)])
-    s_n2 =np.array([Mann_Whitney_calc_s_star(n1, n2, x, y) for x, y in zip(data1_mod2, data2_mod2)]) 
+    data2_mod2 = np.array([np.random.normal(loc=0.1, scale=1, size=n2) for i in range(M)])
+    s_n2 =np.array([t_student_calc_s_star(n1, n2, x, y) for x, y in zip(data1_mod2, data2_mod2)]) 
 
-    #v = np.array([freedom_degree(x,y) for x, y in zip(data1_mod2, data2_mod2)]).mean()
-    s_a_2 = [scst.norm.ppf(x/2) for x in alpha]#scst.t.ppf(alpha/2, v)
-    s_1_a_2 = [scst.norm.ppf(1-x/2) for x in alpha]#scst.t.ppf(1-alpha/2, v)
+    # data1_mod3 = np.array([np.random.normal(loc=0, scale=1, size=n1) for i in range(M)])
+    # data2_mod3 = np.array([np.random.normal(loc=0.3, scale=1, size=n2) for i in range(M)])
+    # s_n3 =np.array([t_student_calc_s_star(n1, n2, x, y) for x, y in zip(data1_mod3, data2_mod3)])
+
+    # data1_mod4 = np.array([np.random.normal(loc=0, scale=1, size=n1) for i in range(M)])
+    # data2_mod4 = np.array([np.random.normal(loc=0.4, scale=1, size=n2) for i in range(M)])
+    # s_n4 =np.array([t_student_calc_s_star(n1, n2, x, y) for x, y in zip(data1_mod4, data2_mod4)])
+
+    # data1_mod5 = np.array([np.random.normal(loc=0, scale=1, size=n1) for i in range(M)])
+    # data2_mod5 = np.array([np.random.normal(loc=0.5, scale=1, size=n2) for i in range(M)])
+    # s_n5 =np.array([t_student_calc_s_star(n1, n2, x, y) for x, y in zip(data1_mod5, data2_mod5)])
+
+    # data1_mod6 = np.array([np.random.normal(loc=0, scale=1, size=n1) for i in range(M)])
+    # data2_mod6 = np.array([np.random.normal(loc=1, scale=1, size=n2) for i in range(M)])
+    # s_n6 =np.array([t_student_calc_s_star(n1, n2, x, y) for x, y in zip(data1_mod6, data2_mod6)])
+
+    v = np.array([freedom_degree(n1, n2, x, y) for x, y in zip(data1_mod2, data2_mod2)]).mean()
+    s_a_2 = [scst.t.ppf(x/2, v) for x in alpha]
+    s_1_a_2 = [scst.t.ppf(1-x/2, v) for x in alpha]
+
+
     ecdf2 = ECDF(s_n2)
-    ecdf1 = ECDF(s_n1)
-    d = scst.ks_2samp(ecdf1(np.sort(s_n1)), ecdf2(np.sort(s_n2)))
+    # ecdf3 = ECDF(s_n3)
+    # ecdf4 = ECDF(s_n4)
+    # ecdf5 = ECDF(s_n5)
+    # ecdf6 = ECDF(s_n6)
+    # ecdf1 = ECDF(s_n1)
     p1 = [1 - (ecdf2(s_1_a_2[i]) - ecdf2(s_a_2[i])) for i in range(len(alpha))]
-    #np.savetxt('s_n_N(0., 1.)_1_5.dat', np.sort(data1_mod1), fmt='%.14f', delimiter=' ', newline='\n', header='S_n 5\n 0 5') 
-    #np.savetxt('s_n_N(0., 1.)_2_5.dat', np.sort(data1_mod1), fmt='%.14f', delimiter=' ', newline='\n', header='S_n 5\n 0 5') 
-    np.savetxt('s_n_N(0., 1.)_5_16600.dat', np.sort(s_n1), fmt='%.14f', delimiter=' ', newline='\n', header='S_n 5\n 0 16600') 
-    np.savetxt('s_n_N(0., 1.)_30_16600.dat', np.sort(s_n2), fmt='%.14f', delimiter=' ', newline='\n', header='S_n 30\n 0 16600') 
-    np.savetxt('power.txt', p1, fmt='%.4f', delimiter=' ', newline='\n')
+    # p2 = [1 - (ecdf3(s_1_a_2[i]) - ecdf3(s_a_2[i])) for i in range(len(alpha))]
+    # p3 = [1 - (ecdf4(s_1_a_2[i]) - ecdf4(s_a_2[i])) for i in range(len(alpha))]
+    # p4 = [1 - (ecdf5(s_1_a_2[i]) - ecdf5(s_a_2[i])) for i in range(len(alpha))]
+    # p5 = [1 - (ecdf6(s_1_a_2[i]) - ecdf6(s_a_2[i])) for i in range(len(alpha))]
+    np.savetxt('s_n_N(0., 1.)_0_16600.dat', np.sort(s_n1), fmt='%.14f', delimiter=' ', newline='\n', header='S_n 5\n 0 16600') 
+    np.savetxt('s_n_N(0., 1.)_1_16600.dat', np.sort(s_n2), fmt='%.14f', delimiter=' ', newline='\n', header='S_n 30\n 0 16600') 
+    np.savetxt('power1.txt', p1, fmt='%.4f', delimiter=' ', newline='\n')
+    # np.savetxt('s_n_N(0., 1.)_3_16600.dat', np.sort(s_n3), fmt='%.14f', delimiter=' ', newline='\n', header='S_n 30\n 0 16600') 
+    # np.savetxt('power3.txt', p2, fmt='%.4f', delimiter=' ', newline='\n')
+    # np.savetxt('s_n_N(0., 1.)_4_16600.dat', np.sort(s_n4), fmt='%.14f', delimiter=' ', newline='\n', header='S_n 30\n 0 16600') 
+    # np.savetxt('power4.txt', p3, fmt='%.4f', delimiter=' ', newline='\n')
+    # np.savetxt('s_n_N(0., 1.)_5_16600.dat', np.sort(s_n5), fmt='%.14f', delimiter=' ', newline='\n', header='S_n 30\n 0 16600') 
+    # np.savetxt('power5.txt', p4, fmt='%.4f', delimiter=' ', newline='\n')
+    # np.savetxt('s_n_N(0., 1.)_6_16600.dat', np.sort(s_n6), fmt='%.14f', delimiter=' ', newline='\n', header='S_n 30\n 0 16600') 
+    # np.savetxt('power6.txt', p5, fmt='%.4f', delimiter=' ', newline='\n')
     return s_n1
 
-n1 = 100
-n2 = 100
+n1 = 20
+n2 = 20
 s_n1 = criterion_stat_modeling(n1, n2, 16600)
 
 # s = Mann_Whitney_calc_s_star(data1, data2)
